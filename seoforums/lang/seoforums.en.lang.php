@@ -36,7 +36,7 @@ $L['info_notes'] = 'Requires the forums module. Recommended plugins: attacher (f
 // === Default texts for empty meta (fallback) ===
 $L['seoforums_topics_empty_meta_title'] = 'Topics list';
 $L['seoforums_topics_empty_meta_description'] = 'Browse all topics in this forum section.';
-$L['seoforums_main_empty_meta_title'] = 'FunSmart Market Forums';
+$L['seoforums_main_empty_meta_title'] = 'Market Forums';
 $L['seoforums_main_empty_meta_description'] = 'Community forums';
 $L['seoforums_sections_empty_meta_title'] = 'Forum section';
 $L['seoforums_sections_empty_meta_description'] = 'No description available for this section.';
