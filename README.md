@@ -1,356 +1,525 @@
-# cot-seoforums
+# SEO Forum — SEO Plugin for the Forums Module of Cotonti
 
-# SEO Forum Plugin for Cotonti
+**Author:** [webitproff](https://github.com/webitproff)  
+**Date:** 2026‑07‑04  
+**Copyright:** © webitproff, 2025‑2026  
+**[Repository](https://github.com/webitproff/cot-seoforums)**  
+**License:** BSD 3‑Clause License
 
-The **SEO Forum** plugin enhances the SEO capabilities of the forums module in [Cotonti CMF](https://github.com/Cotonti/Cotonti) version 0.9.26 on PHP 8.4. It adds meta tags, Open Graph, Twitter Card, Schema.org structured data, keyword extraction, reading time estimation, and displays related topics on forum topic pages.
+[![Version](https://img.shields.io/badge/version-2.1.1-green.svg)](https://github.com/webitproff/cot-seoforums/releases)
+[![Cotonti Compatibility](https://img.shields.io/badge/Cotonti-v.1+-orange.svg)](https://github.com/Cotonti/Cotonti)
+[![PHP](https://img.shields.io/badge/PHP-8.4+-purple.svg)](https://www.php.net/releases/8_4_0.php)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)](https://www.mysql.com/)
+[![Bootstrap v5.3+](https://img.shields.io/badge/Bootstrap-v5.3+-blueviolet.svg)](https://getbootstrap.com/)
+[![Font Awesome v7](https://img.shields.io/badge/Font%20Awesome-v7-blue.svg)](https://fontawesome.com/)
+[![License](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](https://github.com/webitproff/cot-seoforums/blob/main/LICENSE)
 
-## Tested
-Cotonti CMF v.0.9.26 on PHP v.8.4
+---
 
-## File Structure
+## 1. Purpose of the plugin
+
+SEO Forum is a comprehensive SEO solution for the “Forums” module of Cotonti.  
+The plugin automatically generates all necessary meta tags (`title`, `description`, `keywords`), social cards (Open Graph, Twitter Cards), Schema.org structured data (`DiscussionForumPosting`), as well as a “Related Topics” block, reading time, author information, and flexible canonical URL management.
+
+The plugin works on all forum pages:
+
+- topic post list;
+- single post (with proper canonical when `forums_singlepost` is active);
+- section topic list;
+- forum main page;
+- individual category (section) pages.
+
+---
+
+## 2. Key Features
+
+- **Smart meta descriptions**  
+  `meta name="description"` is built according to the pattern: `Category name. Description text`. The description text is truncated without breaking words — up to the nearest period, comma, exclamation mark or question mark after the 160th character; if no punctuation is found, it truncates to the last space.
+
+- **Open Graph and Twitter Cards**  
+  `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `og:site_name`, `og:locale`, as well as `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image` are automatically output.
+
+- **Schema.org structured data**  
+  JSON‑LD of type `DiscussionForumPosting` is generated with fields `headline`, `description` (up to 2000 characters from the post text), `keywords`, `author`, `publisher`, `datePublished`, `dateModified`, `image`, `mainEntityOfPage`.
+
+- **Canonical URL management**  
+  For a single post (when the `forums_singlepost` plugin is active) the canonical URL points to the specific post page rather than the whole topic. For other pages the canonical is built correctly (topic, section, category, forum main page).
+
+- **Related Topics**  
+  A “Related Topics” block is displayed on the topic page (up to 3 topics, configurable). Each topic shows an image (from `attacher` attachments or a placeholder), title, description (smart truncated) and author.
+
+- **Reading time and topic author**  
+  The reading time of the first post is calculated (200 words/min, minimum 1 min). The topic author (or the author of the specific post for single pages) is shown.
+
+- **Custom title and meta tags override**  
+  Custom `title`, `description`, `keywords` are set on topic lists, section pages and the main forum page according to category settings or the plugin’s general settings.
+
+- **Localization**  
+  Full support for Russian and English languages. Default strings for empty meta tags are provided.
+
+---
+
+## 3. File structure
+
 ```
 plugins/seoforums/
 ├── inc/
-│   └── seoforums.functions.php # Functions for keyword extraction and reading time estimation
+│   └── seoforums.functions.php          — functions (keyword extraction, reading time, image retrieval)
 ├── lang/
-│   ├── seoforums.ru.lang.php # Russian translations and stop words for keyword extraction
-│   └── seoforums.en.lang.php # English translations and stop words for keyword extraction
-├── seoforums.forums.posts.php # Adds Open Graph, Twitter Card, and Schema.org meta tags
-├── seoforums.forums.tags.php # Defines page tags (TOPIC_READ_TIME, TOPIC_AUTHOR, RELATED_TOPIC_ROW_*)
-├── seoforums.header.tags.php # Overrides HEADER_META_DESCRIPTION and HEADER_META_KEYWORDS
-└── seoforums.setup.php # Plugin configuration and setup
+│   ├── seoforums.ru.lang.php            — Russian translation and stop words
+│   └── seoforums.en.lang.php            — English translation and stop words
+├── seoforums.setup.php                  — plugin registration and configuration
+├── seoforums.forums.posts.main.php       — SEO tags for post list and single post (Open Graph, Twitter, Schema.org, canonical)
+├── seoforums.forums.posts.tags.php       — template tags (related topics, reading time, author)
+├── seoforums.header.tags.php             — override of meta tags in <head> for all forum pages
+└── seoforums.global.php                  — (optional) additional global actions
 ```
 
-### File Description
-- **seoforums.setup.php**: Defines plugin metadata (name, version, author) and configuration (image paths, number of related topics).
-- **seoforums.functions.php**: Contains functions:
-  - `cot_extract_keywords_forums($text, $limit = 10)`: Extracts keywords from text, removing HTML, converting to lowercase, excluding stop words, and sorting by frequency.
-  - `cot_estimate_read_time_forums($text)`: Estimates reading time, removing HTML/BB codes, counting words (200 words/minute, minimum 1 minute).
-- **seoforums.header.tags.php**: Overrides `{HEADER_META_DESCRIPTION}` and `{HEADER_META_KEYWORDS}` for meta tags on forum topic pages.
-- **seoforums.forums.posts.php**: Generates Open Graph, Twitter Card, and Schema.org meta tags for topic pages, including title, description, keywords, author, category, and images.
-- **seoforums.forums.tags.php**: Defines tags for the `forums.posts.tpl` template, such as `{TOPIC_READ_TIME}`, `{TOPIC_AUTHOR}`, `{RELATED_TOPIC_ROW_URL}`, `{RELATED_TOPIC_ROW_TITLE}`, `{RELATED_TOPIC_ROW_DESC}`, `{RELATED_TOPIC_ROW_IMAGE}`, `{RELATED_TOPIC_ROW_AUTHOR}`.
-- **seoforums.ru.lang.php**: Contains Russian translations ("Related topics", "min read", "Unknown author") and stop words for keyword extraction.
-- **seoforums.en.lang.php**: Contains English translations (e.g., "Related topics", "min read", "Unknown author") and stop words for keyword extraction.
+---
 
-## Features
-- **Meta Tags**:
-  - Generates `<meta name="description">` (category + topic description or first post text, truncated to 160 characters) and `<meta name="keywords">` (extracted keywords).
-  - Ensures description is a single line without breaks.
-- **Open Graph and Twitter Card**:
-  - Adds tags `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `og:site_name`, `og:locale`, `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image` for social media sharing.
-- **Schema.org**:
-  - Includes structured data for the `DiscussionForumPosting` type (`headline`, `description`, `keywords`, `author`, `publisher`, `image`, `datePublished`, `dateModified`, `mainEntityOfPage`).
-- **Keyword Extraction**:
-  - Extracts up to 10 keywords from the first post's text using `cot_extract_keywords_forums`, excluding stop words from `seoforums.ru.lang.php` or `seoforums.en.lang.php`.
-- **Reading Time Estimation**:
-  - Calculates the reading time of the first post using `cot_estimate_read_time_forums` (200 words/minute, minimum 1 minute).
-- **Related Topics**:
-  - Displays up to 3 (configurable) related topics from the same or other categories, with title, description, image (`ft_image` or placeholder), and author.
-- **Topic Author**:
-  - Shows the author's name from `cot_users` by `ft_firstposterid` or "Unknown author" if data is unavailable.
+## 4. How it works
 
-## Functionality
-- **Microdata**: Adds JSON-LD structured data for the "DiscussionForumPosting" type, including title, description, keywords, author, publisher, publication and modification dates, image, and page link.
-- **Open Graph and Twitter Card**: Generates meta tags for social media, including title, description, URL, image, and content type.
-- **Related Topics**: Displays a block of related topics (RELATED_TOPICS) on the forum topic page. The number of topics is configurable (default is 3). Topics are sourced from the same category if possible, otherwise from other categories. Each related topic includes URL, title, description (from ft_desc or first post), image (ft_image or placeholder), and author.
-- **Reading Time**: Calculates the estimated reading time of the first post based on word count (average speed of 200 words per minute, minimum 1 minute). Displayed in the template as "X min read".
-- **Keywords**: Extracts keywords from the first post's text, excluding stop words (Russian or English list), considering frequency and word length (>2 characters). Returns up to 10 keywords.
-- **Topic Author**: Identifies the author by ft_firstposterid, or "Unknown author" if not found.
-- **Meta Tag Override**: Sets meta description (category + description, truncated to 160 characters) and meta keywords (extracted keywords) on forum topic pages.
-- **Images**: Uses placeholders for the logo (small image) and topic image (large image), configurable in settings.
+### Smart description trimming
+When generating `meta description` and descriptions in microdata, the following algorithm is applied:
 
-## Installation
+1. The source text is taken (topic description or post text).
+2. If its length exceeds 160 characters, a period, comma, `!` or `?` is searched for in the range from 160 to 250 characters.
+3. If a punctuation mark is found — the text is trimmed up to and including it (without breaking words).
+4. If no punctuation mark is found — we trim to the last space before the 160th character, preserving word integrity.
+5. The category name with a period is prepended: `Category. Description…`.
 
-### Requirements
-- Cotonti CMF v.0.9.26.
-- `forums` module enabled.
-- MySQL/MariaDB database.
-- Recommended plugins: `attacher`, `urleditor`.
+### Integration with `forums_singlepost`
+When the `forums_singlepost` plugin is active on a single post page:
 
-### Steps
-1. **Download the Plugin**:
-   - Clone or download the repository from GitHub:
-     ```bash
-     git clone https://github.com/webitproff/cot-seoforums.git
-     ```
-   - Or download the ZIP and extract it to `/plugins/`.
-2. **Copy Files**:
-   - Place the `seoforums` folder in the `/plugins/` directory of your Cotonti installation:
-     ```
-     public_html/plugins/seoforums/
-     ```
-3. **Install the Plugin**:
-   - Go to **Administration → Extensions** in the Cotonti admin panel.
-   - Find **SEO Forum** in the list and click **Install**.
-   - The plugin will be registered using `seoforums.setup.php`.
-4. **Configure Settings**:
-   - Go to **Administration → Extensions → seoforums → Configuration**.
-   - Specify:
-     - `placeholderlogo`: Path to the logo (e.g., `/images/logo.png`).
-     - `placeholderimagedefault`: Path to the default topic image (e.g., `/images/default.jpg`).
-     - `maxrelatedpostsperpage`: Number of related topics (0, 1, 2, 3, 5, 7; default is 3).
-5. **Update Templates**:
-   - Open `/themes/{your_theme}/header.tpl` and ensure it contains:
-     ```html
-     <meta name="description" content="{HEADER_META_DESCRIPTION}" />
-     <meta name="keywords" content="{HEADER_META_KEYWORDS}" />
-     ```
-     Also add, if missing:
-     ```html
-     <!-- IF {PHP.out.meta} -->{PHP.out.meta}<!-- ENDIF -->
-     ```
-   - Open `/themes/{your_theme}/forums.posts.tpl` and add:
-     ```html
-     <!-- IF {PHP|cot_plugin_active('seoforums')} -->
-     <!-- BEGIN: RELATED_TOPICS -->
-     <div class="mb-4 mt-5">
-       <h3 class="h4 mt-3">{PHP.L.seoforums_related}</h3>
-       <div class="list-group list-group-striped list-group-flush">
-         <!-- BEGIN: RELATED_ROW -->
-         <div class="list-group-item list-group-item-action">
-           <a class="link-secondary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" href="{RELATED_TOPIC_ROW_URL}">
-             <div class="row g-3">
-               <div class="col-12 col-md-1 text-center">
-                 <img src="{RELATED_TOPIC_ROW_IMAGE}" alt="{RELATED_TOPIC_ROW_TITLE}" class="rounded-circle" width="64" height="64">
-               </div>
-               <div class="col-12 col-md-11">
-                 <h5 class="mb-0 fs-6 fw-semibold text-primary-emphasis">{RELATED_TOPIC_ROW_TITLE}</h5>
-                 <!-- IF {RELATED_TOPIC_ROW_DESC} -->
-                 <p class="mb-1 text-muted">{RELATED_TOPIC_ROW_DESC}</p>
-                 <!-- ENDIF -->
-                 <p class="mb-1 text-muted small">{RELATED_TOPIC_ROW_AUTHOR}</p>
-               </div>
-             </div>
-           </a>
-         </div>
-         <!-- END: RELATED_ROW -->
-       </div>
-     </div>
-     <!-- END: RELATED_TOPICS -->
-     <!-- ENDIF -->
-     ```
-     Also in `forums.posts.tpl`, add for displaying reading time and topic author:
-     ```html
-     <!-- IF {PHP|cot_plugin_active('seoforums')} -->
-     {TOPIC_READ_TIME}
-     {TOPIC_AUTHOR}
-     <!-- ENDIF -->
-     ```
-6. **Clear Cache**:
-   - Go to **Administration → Cache → Clear Cache**.
-7. **Test the Plugin**:
-   - Visit a forum topic page, e.g., `https://abuyfile.com/index.php?e=forums&m=posts&q=171&l=ru`.
-   - Verify:
-     - `<meta name="description">` and `<meta name="keywords">` in `<head>`.
-     - Open Graph and Schema.org meta tags via `{PHP.out.meta}`.
-     - Reading time (`{TOPIC_READ_TIME}`), author (`{TOPIC_AUTHOR}`), and related topics block (`RELATED_TOPICS`).
+- `og:url` and `canonical` point to **the post itself**, not the topic.
+- `meta description` and `JSON-LD description` are generated from the text of **the specific post**.
+- The author in microdata corresponds to the post author, not the first message of the topic.
+- The image is taken from the post attachments; if none exist — from the topic.
 
-## Recommendations
-- **Image Configuration**:
-  - Specify valid paths for `placeholderlogo` and `placeholderimagedefault` to ensure proper display in meta tags and related topics.
-- **Stop Words**:
-  - Expand the stop words list in `seoforums.ru.lang.php` or `seoforums.en.lang.php` to improve keyword extraction:
-    ```php
-    $L['seoforums_stop_words'] = 'a,an,the,and,but,or,for,of,in,to,at,by,from,...';
-    ```
-- **Database Optimization**:
-  - Ensure indexes on `cot_forum_topics` (`ft_id`, `ft_cat`, `ft_firstposterid`), `cot_forum_posts` (`fp_topicid`), `cot_users` (`user_id`), and `cot_structure` (`structure_code`, `structure_area`) are created to speed up queries.
-- **Testing**:
-  - Use browser developer tools to check meta tags and JSON-LD.
-  - Create multiple topics in one category to test the related topics block.
+### Related Topics
+The `RELATED_TOPICS` block is displayed in the forum template. For each related topic:
 
-## Warnings
-- **Template Conflicts**:
-  - Ensure `{PHP.out.meta}` is not duplicated in `header.tpl` to avoid multiple Open Graph, Twitter Card, or Schema.org meta tags.
-- **Images**:
-  - If the `ft_image` field in the `cot_forum_topics` table is missing or empty, the plugin uses `placeholderlogo` or `placeholderimagedefault`. Specify valid images in the configuration.
-- **Performance**:
-  - Keyword extraction (`cot_extract_keywords_forums`) may slow down loading for long texts. Consider caching results.
-- **Language Support**:
-  - The plugin includes Russian (`seoforums.ru.lang.php`) and English (`seoforums.en.lang.php`) languages. Add corresponding files for other languages.
+- It checks whether a description (`ft_desc`) exists — if not, the text of the first post is used.
+- The description is smart trimmed (using the same algorithm as `meta description`) and prepended with the category name.
+- The image is obtained from the `attacher` attachments of the first post, or a placeholder is used.
+- The author is determined by `ft_firstposterid`.
 
-## License
-BSD License. Author: webitproff, Copyright (c) 2025. Repository: https://github.com/webitproff/cot-seoforums.
+---
 
-## Support
-**[Help and Discussion](https://abuyfile.com/index.php?e=forums&m=posts&q=171&l=ru)**
+## 5. Requirements
 
-## Version
-2.0.1 (Date: 2025-10-19).
+- **Cotonti CMF** version 1.0 or newer (tested on 0.9.26+)
+- **PHP** 8.4 or higher
+- **MySQL** 8.0+ (or MariaDB with InnoDB support)
+- The **forums** module must be installed and enabled
+- Recommended plugins:
+  - `attacher` — for extracting images from posts
+  - `urleditor` — for SEO‑friendly URLs
+
+---
+
+## 6. Installation
+
+1. Copy the `seoforums` folder to the `plugins/` directory of your site.
+2. Go to **Admin Panel → Extensions** and install the **SEO Forum** plugin.
+3. Configure the settings:
+   - `placeholderlogo` — path to a small logo for microdata (e.g., `themes/index36/img/logo.webp`)
+   - `placeholderimagedefault` — path to a large placeholder image for topics without an image
+   - `maxrelatedpostsperpage` — number of related topics (0 to disable the block)
+4. In the `header.tpl` template, make sure the tags `{HEADER_META_DESCRIPTION}`, `{HEADER_META_KEYWORDS}` and `{PHP.out.meta}` are present.
+   Example:
+```html
+<!--
+	/********************************************************************************
+	* File: header.tpl
+	* Extension: Core'
+	* Description: HTML template for header.tpl.
+	* Compatibility: CMF/CMS Cotonti Siena v0.9.26[](https://github.com/Cotonti/Cotonti)
+	* Dependencies: 
+	* 		 Bootstrap 5.3.+[](https://getbootstrap.com/); 
+	* 		 Font Awesome Free 7.1[](https://fontawesome.com/)
+	* Theme: Index36  
+	* Version: 1.0.2 
+	* Created: 01 Feb 2026 
+	* Updated: 04 July 2026 
+	* Copyright (c) 2026 webitproff | https://github.com/webitproff
+	* Source: https://github.com/webitproff/index36-cotonti-theme
+	* Demo : https://freelance-script.abuyfile.com/ 
+	* Help and support: https://abuyfile.com/ru/forums/cotonti/original/skins/index36
+	* License: BSD (Free distribution with saving Copyright (c) 2026 webitproff)  
+	********************************************************************************/
+-->
+<!-- BEGIN: HEADER -->
+<!DOCTYPE html>
+	<!-- IF {HTML_LANG} -->
+	<html lang="{HTML_LANG}" data-bs-theme="light">
+	<!-- ELSE -->
+	<html lang="{PHP.usr.lang}" data-bs-theme="light">
+	<!-- ENDIF -->
+<!-- main header -->
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<!-- IF {I18N_HEADER_META_TITLE} --> 
+		<title>{I18N_HEADER_META_TITLE}</title>
+		<!-- ELSE -->
+		<title>{HEADER_TITLE} <!-- IF {MARKET_HEADER_XTRA_DEMO_COUNTRY} -->{MARKET_HEADER_XTRA_DEMO_COUNTRY_NAME} <!-- ENDIF --></title>
+		<!-- ENDIF -->
+	<!-- IF {I18N_HEADER_META_DESCRIPTION} --> 
+		<meta name="description" content="{I18N_HEADER_META_DESCRIPTION}" />
+	<!-- ELSE -->
+		<!-- IF {HEADER_META_DESCRIPTION} -->
+		<meta name="description" content="{HEADER_META_DESCRIPTION}" />
+		<!-- ENDIF -->
+	<!-- ENDIF -->
+		<!-- IF {HEADER_BASEHREF} -->
+		{HEADER_BASEHREF}
+		<!-- ENDIF -->
+		<!-- IF {HEADER_CANONICAL_URL} -->
+		<link rel="canonical" href="{HEADER_CANONICAL_URL}" />
+		<!-- ENDIF -->
+		<!-- IF {ALTERNATE_TAGS} -->
+		{ALTERNATE_TAGS}
+		<!-- ENDIF -->
+		<link rel="shortcut icon" href="favicon.ico" />
+		<link rel="icon" href="{PHP.cfg.themes_dir}/{PHP.theme}/img/icon.webp" type="image/svg+xml">
+		<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+		<!-- IF {PHP.out.meta} -->
+		{PHP.out.meta}
+		<!-- ENDIF -->
+		<script>
+			(function () {
+				const storedTheme = localStorage.getItem('theme');
+				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const defaultTheme = storedTheme || (prefersDark ? 'dark' : 'light');
+				document.documentElement.setAttribute('data-bs-theme', defaultTheme);
+			})();
+		</script>
+		{HEADER_HEAD}
+	</head>
+		<body>
+```
+
+5. In the `forums.posts.tpl` template, add the `RELATED_TOPICS` block (example in the documentation) and the tags `{TOPIC_READ_TIME}`, `{TOPIC_AUTHOR}` as needed.
+   For example, after the reply form, insert:
+```html
+<!-- IF {PHP|cot_plugin_active('seoforums')} -->
+<!-- BEGIN: RELATED_TOPICS -->
+<div class="container mb-4 mt-5">
+    <h3 class="h4 mt-3">{PHP.L.seoforums_related}</h3>
+    <div class="row g-3">
+        <!-- BEGIN: RELATED_ROW -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <a href="{RELATED_TOPIC_ROW_URL}" class="card border-0 shadow-sm text-decoration-none h-100 overflow-hidden">
+                <!-- Image cropped to 1200:630 aspect ratio -->
+                <div class="related-img-wrapper" style="aspect-ratio: 1200 / 630; width: 100%; overflow: hidden;">
+                    <img src="{RELATED_TOPIC_ROW_IMAGE}" 
+					alt="{RELATED_TOPIC_ROW_TITLE}" 
+					class="related-img"
+					style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+				</div>
+                <!-- Card content -->
+                <div class="card-body">
+                    <h5 class="fs-6 fw-semibold mb-1 text-body">{RELATED_TOPIC_ROW_TITLE}</h5>
+                    <!-- IF {RELATED_TOPIC_ROW_DESC} -->
+                    <p class="text-muted small mb-1">{RELATED_TOPIC_ROW_DESC}</p>
+                    <!-- ENDIF -->
+                    <p class="text-muted small mb-0">{RELATED_TOPIC_ROW_AUTHOR}</p>
+				</div>
+			</a>
+		</div>
+        <!-- END: RELATED_ROW -->
+	</div>
+</div>
+<!-- END: RELATED_TOPICS -->
+<!-- ENDIF -->
+```
+6. Clear the system cache.
+
+---
+
+## 7. Recommendations
+
+- Install the `attacher` plugin for proper extraction of images from posts.
+- Adjust the stop‑words in the language file to improve keyword extraction quality.
+- If you use **[forums_singlepost](https://github.com/webitproff/forums-singlepost-tpl-cotonti)** for separate single post templates, the plugin will automatically adjust canonical URLs and meta tags.
+- For a large number of posts, ensure that the `cot_forum_topics`, `cot_forum_posts` and `cot_structure` tables have the necessary indexes.
+
+---
+## 8. Support
+**[Help and discussion](https://abuyfile.com/index.php?e=forums&m=posts&q=171&l=ru)**
+
+---
+
+## 9. License
+
+BSD 3‑Clause License.  
+Author: [webitproff](https://github.com/webitproff), Copyright © 2025‑2026.
+
+**Repository:** [https://github.com/webitproff/cot-seoforums](https://github.com/webitproff/cot-seoforums)
 
 
-# Плагин SEO Forum для Cotonti
 
-Плагин **SEO Forum** расширяет SEO-возможности модуля форумов в [Cotonti CMF](https://github.com/Cotonti/Cotonti) версии 0.9.26 на PHP 8.4. Он добавляет мета-теги, Open Graph, Twitter Card, структурированные данные Schema.org, извлечение ключевых слов, оценку времени чтения и вывод похожих тем на страницах форума.
+___
+РУССКИЙ
+___
 
-## Протестировано
-Cotonti CMF v.0.9.26 на PHP v.8.4
+# SEO Forum — SEO‑плагин для модуля форумов Cotonti
 
-## Структура файлов
+**Автор:** [webitproff](https://github.com/webitproff)  
+**Дата:** 2026‑07‑04  
+**Copyright:** © webitproff, 2025‑2026  
+**[Репозиторий](https://github.com/webitproff/cot-seoforums)**  
+**Лицензия:** BSD 3‑Clause License
+
+[![Version](https://img.shields.io/badge/version-2.1.1-green.svg)](https://github.com/webitproff/cot-seoforums/releases)
+[![Cotonti Compatibility](https://img.shields.io/badge/Cotonti-v.1+-orange.svg)](https://github.com/Cotonti/Cotonti)
+[![PHP](https://img.shields.io/badge/PHP-8.4+-purple.svg)](https://www.php.net/releases/8_4_0.php)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)](https://www.mysql.com/)
+[![Bootstrap v5.3+](https://img.shields.io/badge/Bootstrap-v5.3+-blueviolet.svg)](https://getbootstrap.com/)
+[![Font Awesome v7](https://img.shields.io/badge/Font%20Awesome-v7-blue.svg)](https://fontawesome.com/)
+[![License](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](https://github.com/webitproff/cot-seoforums/blob/main/LICENSE)
+
+---
+
+## 1. Назначение плагина
+
+SEO Forum — это комплексное SEO‑решение для модуля «Форумы» Cotonti.  
+Плагин автоматически формирует все необходимые мета‑теги (`title`, `description`, `keywords`), социальные карточки (Open Graph, Twitter Cards), структурированные данные Schema.org (`DiscussionForumPosting`), а также добавляет блок «Похожие темы», время чтения, информацию об авторе и гибко управляет каноническими URL.
+
+Плагин работает на всех страницах форума:
+
+- список постов темы;
+- одиночный пост (с корректным canonical при активном `forums_singlepost`);
+- список тем раздела;
+- главная страница форума;
+- страницы отдельных категорий (секций).
+
+---
+
+## 2. Основные возможности
+
+- **Умные мета‑описания**  
+  `meta name="description"` формируется по схеме: `Название категории. Текст описания`. Текст описания обрезается без разрыва слов — до ближайшей точки, запятой, восклицательного или вопросительного знака после 160‑го символа, а если знак не найден — до последнего пробела.
+
+- **Open Graph и Twitter Cards**  
+  Автоматически выводятся `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `og:site_name`, `og:locale`, а также `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`.
+
+- **Структурированные данные Schema.org**  
+  Генерируется JSON‑LD типа `DiscussionForumPosting` с полями `headline`, `description` (до 2000 символов из текста поста), `keywords`, `author`, `publisher`, `datePublished`, `dateModified`, `image`, `mainEntityOfPage`.
+
+- **Управление каноническими URL**  
+  Для одиночного поста (при активном плагине `forums_singlepost`) канонический URL указывает на страницу конкретного поста, а не на всю тему. Для остальных страниц каноникал строится корректно (тема, раздел, категория, главная форума).
+
+- **Похожие темы**  
+  На странице темы выводится блок «Похожие темы» (до 3 тем, настраивается). Каждая тема показывает изображение (из вложений `attacher` или плейсхолдер), заголовок, описание (с умной обрезкой) и автора.
+
+- **Время чтения и автор темы**  
+  Рассчитывается время чтения первого поста (200 слов/мин, минимум 1 мин). Отображается автор темы (или автор конкретного поста для одиночной страницы).
+
+- **Переопределение заголовков и мета‑тегов**  
+  На страницах списка тем, разделов и главной форума устанавливаются кастомные `title`, `description`, `keywords` в соответствии с настройками категорий или общими настройками плагина.
+
+- **Локализация**  
+  Полная поддержка русского и английского языков. Предусмотрены дефолтные строки для пустых мета‑тегов.
+
+---
+
+## 3. Структура файлов
+
 ```
 plugins/seoforums/
 ├── inc/
-│   └── seoforums.functions.php # Функции для извлечения ключевых слов и оценки времени чтения
+│   └── seoforums.functions.php          — функции (извлечение ключевых слов, время чтения, получение изображений)
 ├── lang/
-│   ├── seoforums.ru.lang.php # Русские переводы и стоп-слова для извлечения ключевых слов
-│   └── seoforums.en.lang.php # Английские переводы и стоп-слова для извлечения ключевых слов
-├── seoforums.forums.posts.php # Добавляет мета-теги Open Graph, Twitter Card и Schema.org
-├── seoforums.forums.tags.php # Определяет теги страницы (TOPIC_READ_TIME, TOPIC_AUTHOR, RELATED_TOPIC_ROW_*)
-├── seoforums.header.tags.php # Переопределяет HEADER_META_DESCRIPTION и HEADER_META_KEYWORDS
-└── seoforums.setup.php # Конфигурация и установка плагина
+│   ├── seoforums.ru.lang.php            — русский перевод и стоп‑слова
+│   └── seoforums.en.lang.php            — английский перевод и стоп‑слова
+├── seoforums.setup.php                  — регистрация и конфигурация плагина
+├── seoforums.forums.posts.main.php       — SEO‑теги для списка постов и одиночного поста (Open Graph, Twitter, Schema.org, canonical)
+├── seoforums.forums.posts.tags.php       — теги для шаблонов (похожие темы, время чтения, автор)
+├── seoforums.header.tags.php             — переопределение мета‑тегов в <head> для всех страниц форума
+└── seoforums.global.php                  — (опционально) дополнительные глобальные действия
 ```
 
-### Описание файлов
-- **seoforums.setup.php**: Определяет метаданные плагина (название, версия, автор) и конфигурацию (пути к изображениям, количество похожих тем).
-- **seoforums.functions.php**: Содержит функции:
-  - `cot_extract_keywords_forums($text, $limit = 10)`: Извлекает ключевые слова из текста, удаляя HTML, приводя к нижнему регистру, исключая стоп-слова и сортируя по частоте.
-  - `cot_estimate_read_time_forums($text)`: Оценивает время чтения, удаляя HTML/BB-коды, считая слова (200 слов/минута, минимум 1 минута).
-- **seoforums.header.tags.php**: Переопределяет `{HEADER_META_DESCRIPTION}` и `{HEADER_META_KEYWORDS}` для мета-тегов на страницах тем форума.
-- **seoforums.forums.posts.php**: Генерирует мета-теги Open Graph, Twitter Card и Schema.org для страниц тем, включая заголовок, описание, ключевые слова, автора, категорию и изображения.
-- **seoforums.forums.tags.php**: Определяет теги для шаблона `forums.posts.tpl`, такие как `{TOPIC_READ_TIME}`, `{TOPIC_AUTHOR}`, `{RELATED_TOPIC_ROW_URL}`, `{RELATED_TOPIC_ROW_TITLE}`, `{RELATED_TOPIC_ROW_DESC}`, `{RELATED_TOPIC_ROW_IMAGE}`, `{RELATED_TOPIC_ROW_AUTHOR}`.
-- **seoforums.ru.lang.php**: Содержит русские переводы ("Похожие темы", "мин чтения", "Неизвестный автор") и стоп-слова для извлечения ключевых слов.
-- **seoforums.en.lang.php**: Содержит английские переводы (например, "Related topics", "min read", "Unknown author") и стоп-слова для извлечения ключевых слов.
+---
 
-## Возможности
-- **Мета-теги**:
-  - Генерирует `<meta name="description">` (категория + описание темы или текст первого поста, усечённое до 160 символов) и `<meta name="keywords">` (извлечённые ключевые слова).
-  - Обеспечивает описание в одну строку без переносов.
-- **Open Graph и Twitter Card**:
-  - Добавляет теги `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `og:site_name`, `og:locale`, `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image` для шаринга в соцсетях.
-- **Schema.org**:
-  - Включает структурированные данные для типа `DiscussionForumPosting` (`headline`, `description`, `keywords`, `author`, `publisher`, `image`, `datePublished`, `dateModified`, `mainEntityOfPage`).
-- **Извлечение ключевых слов**:
-  - Извлекает до 10 ключевых слов из текста первого поста с помощью `cot_extract_keywords_forums`, исключая стоп-слова из `seoforums.ru.lang.php` или `seoforums.en.lang.php`.
-- **Оценка времени чтения**:
-  - Рассчитывает время чтения первого поста с помощью `cot_estimate_read_time_forums` (200 слов/минута, минимум 1 минута).
-- **Похожие темы**:
-  - Отображает до 3 (настраиваемо) похожих тем из той же категории или других категорий, с заголовком, описанием, изображением (`ft_image` или плейсхолдер) и автором.
-- **Автор темы**:
-  - Показывает имя автора из `cot_users` по `ft_firstposterid` или "Неизвестный автор", если данные отсутствуют.
+## 4. Как это работает
 
-## Функциональность
-- **Микроразметка**: Добавляет структурированные данные в формате JSON-LD для типа "DiscussionForumPosting", включая заголовок, описание, ключевые слова, автора, издателя, даты публикации и модификации, изображение и ссылку на страницу.
-- **Open Graph и Twitter Card**: Генерирует мета-теги для социальных сетей, включая заголовок, описание, URL, изображение и тип контента.
-- **Похожие темы**: Выводит блок с похожими темами (RELATED_TOPICS) на странице темы форума. Количество тем настраивается в конфигурации (по умолчанию 3). Темы берутся из той же категории, если возможно, иначе из других категорий. Для каждой похожей темы отображается URL, заголовок, описание (из ft_desc или первого поста), изображение (ft_image или плейсхолдер) и автор.
-- **Время чтения**: Рассчитывает ориентировочное время чтения первого поста темы на основе количества слов (средняя скорость 200 слов в минуту, минимум 1 минута). Выводится в шаблоне как "X мин чтения".
-- **Ключевые слова**: Извлекает ключевые слова из текста первого поста, исключая стоп-слова (список на русском), учитывая частоту и длину слов (>2 символов). Возвращает до 10 ключевых слов.
-- **Автор темы**: Определяет автора по ft_firstposterid, если не найден — "Неизвестный автор".
-- **Переопределение мета-тегов**: На страницах тем форума устанавливает meta description (категория + описание, усечённое до 160 символов) и meta keywords (извлечённые ключевые слова).
-- **Изображения**: Использует плейсхолдеры для логотипа (маленькое изображение) и изображения темы (большое изображение), настраиваемые в конфигурации.
+### Умная обрезка описаний
+При формировании `meta description` и описаний в микроразметке применяется алгоритм:
 
-## Установка
+1. Берётся исходный текст (описание темы или текст поста).
+2. Если его длина больше 160 символов, ищется точка, запятая, `!` или `?` в диапазоне от 160 до 250 символов.
+3. Если знак найден — текст обрезается до него включительно (без разрыва слова).
+4. Если знак не найден — обрезаем до последнего пробела перед 160‑м символом, сохраняя целостность слова.
+5. В начало добавляется название категории с точкой: `Категория. Описание…`.
 
-### Требования
-- Cotonti CMF v.0.9.26.
-- Модуль `forums` включён.
-- База данных MySQL/MariaDB.
-- Рекомендуемые плагины: `attacher`, `urleditor`.
+### Интеграция с `forums_singlepost`
+При активном плагине `forums_singlepost` на странице одиночного поста:
 
-### Шаги
-1. **Скачайте плагин**:
-   - Клонируйте или скачайте репозиторий с GitHub:
-     ```bash
-     git clone https://github.com/webitproff/cot-seoforums.git
-     ```
-   - Или скачайте ZIP и распакуйте в `/plugins/`.
-2. **Скопируйте файлы**:
-   - Поместите папку `seoforums` в `/plugins/` вашей установки Cotonti:
-     ```
-     public_html/plugins/seoforums/
-     ```
-3. **Установите плагин**:
-   - Перейдите в **Администрирование → Расширения** в админ-панели Cotonti.
-   - Найдите **SEO Forum** в списке и нажмите **Установить**.
-   - Плагин зарегистрируется с помощью `seoforums.setup.php`.
-4. **Настройте конфигурацию**:
-   - Перейдите в **Администрирование → Расширения → seoforums → Конфигурация**.
-   - Укажите:
-     - `placeholderlogo`: Путь к логотипу (например, `/images/logo.png`).
-     - `placeholderimagedefault`: Путь к изображению темы (например, `/images/default.jpg`).
-     - `maxrelatedpostsperpage`: Количество похожих тем (0, 1, 2, 3, 5, 7; по умолчанию 3).
-5. **Обновите шаблоны**:
-   - Откройте `/themes/{ваша_тема}/header.tpl` и убедитесь, что он содержит:
-     ```html
-     <meta name="description" content="{HEADER_META_DESCRIPTION}" />
-     <meta name="keywords" content="{HEADER_META_KEYWORDS}" />
-     ```
-     Также добавьте, если отсутствует:
-     ```html
-     <!-- IF {PHP.out.meta} -->{PHP.out.meta}<!-- ENDIF -->
-     ```
-   - Откройте `/themes/{ваша_тема}/forums.posts.tpl` и добавьте:
-     ```html
-     <!-- IF {PHP|cot_plugin_active('seoforums')} -->
-     <!-- BEGIN: RELATED_TOPICS -->
-     <div class="mb-4 mt-5">
-       <h3 class="h4 mt-3">{PHP.L.seoforums_related}</h3>
-       <div class="list-group list-group-striped list-group-flush">
-         <!-- BEGIN: RELATED_ROW -->
-         <div class="list-group-item list-group-item-action">
-           <a class="link-secondary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" href="{RELATED_TOPIC_ROW_URL}">
-             <div class="row g-3">
-               <div class="col-12 col-md-1 text-center">
-                 <img src="{RELATED_TOPIC_ROW_IMAGE}" alt="{RELATED_TOPIC_ROW_TITLE}" class="rounded-circle" width="64" height="64">
-               </div>
-               <div class="col-12 col-md-11">
-                 <h5 class="mb-0 fs-6 fw-semibold text-primary-emphasis">{RELATED_TOPIC_ROW_TITLE}</h5>
-                 <!-- IF {RELATED_TOPIC_ROW_DESC} -->
-                 <p class="mb-1 text-muted">{RELATED_TOPIC_ROW_DESC}</p>
-                 <!-- ENDIF -->
-                 <p class="mb-1 text-muted small">{RELATED_TOPIC_ROW_AUTHOR}</p>
-               </div>
-             </div>
-           </a>
-         </div>
-         <!-- END: RELATED_ROW -->
-       </div>
-     </div>
-     <!-- END: RELATED_TOPICS -->
-     <!-- ENDIF -->
-     ```
-     Также в `forums.posts.tpl` добавьте для отображения времени чтения и автора темы:
-     ```html
-     <!-- IF {PHP|cot_plugin_active('seoforums')} -->
-     {TOPIC_READ_TIME}
-     {TOPIC_AUTHOR}
-     <!-- ENDIF -->
-     ```
-6. **Очистите кэш**:
-   - Перейдите в **Администрирование → Кэш → Очистить кэш**.
-7. **Протестируйте плагин**:
-   - Перейдите на страницу темы форума, например: (`https://abuyfile.com/index.php?e=forums&m=posts&q=171&l=ru`).
-   - Проверьте:
-     - `<meta name="description">` и `<meta name="keywords">` в `<head>`.
-     - Мета-теги Open Graph и Schema.org через `{PHP.out.meta}`.
-     - Время чтения (`{TOPIC_READ_TIME}`), автора (`{TOPIC_AUTHOR}`) и блок похожих тем (`RELATED_TOPICS`).
+- `og:url` и `canonical` ссылаются на **сам пост**, а не на тему.
+- `meta description` и `JSON-LD description` формируются из текста **конкретного поста**.
+- Автор в микроразметке соответствует автору поста, а не первому сообщению темы.
+- Изображение подбирается из вложений поста, а если их нет — из темы.
 
-## Рекомендации
-- **Конфигурация изображений**:
-  - Укажите валидные пути в `placeholderlogo` и `placeholderimagedefault` для корректного отображения в мета-тегах и блоке похожих тем.
-- **Стоп-слова**:
-  - Расширьте список стоп-слов в `seoforums.ru.lang.php` или `seoforums.en.lang.php` для улучшения извлечения ключевых слов:
-    ```php
-    $L['seoforums_stop_words'] = 'а,без,более,бы,был,была,были,было,быть,в,вам,вас,весь,во,вот,...';
-    ```
-- **Оптимизация базы данных**:
-  - Убедитесь, что индексы на `cot_forum_topics` (`ft_id`, `ft_cat`, `ft_firstposterid`), `cot_forum_posts` (`fp_topicid`), `cot_users` (`user_id`) и `cot_structure` (`structure_code`, `structure_area`) созданы для ускорения запросов.
-- **Тестирование**:
-  - Используйте инструменты разработчика браузера для проверки мета-тегов и JSON-LD.
-  - Создайте несколько тем в одной категории для проверки блока похожих тем.
+### Похожие темы
+Блок `RELATED_TOPICS` выводится в шаблоне форума. Для каждой похожей темы:
 
-## Предупреждения
-- **Конфликты шаблонов**:
-  - Убедитесь, что `{HEADER_META_DESCRIPTION}`, `{HEADER_META_KEYWORDS}`, и `{PHP.out.meta}` не дублируются в `header.tpl`, чтобы избежать множественных мета-тегов.
-- **Изображения**:
-  - Если поле `ft_image` в таблице `cot_forum_topics` отсутствует или пустое, плагин использует `placeholderlogo` или `placeholderimagedefault`. Укажите валидные изображения в конфигурации.
-- **Производительность**:
-  - Извлечение ключевых слов (`cot_extract_keywords_forums`) может замедлить загрузку для длинных текстов. Рассмотрите кэширование результатов.
-- **Языковая поддержка**:
-  - Плагин включает русский (`seoforums.ru.lang.php`) и английский (`seoforums.en.lang.php`) языки. Для других языков добавьте соответствующие файлы.
+- Проверяется, есть ли описание (`ft_desc`) — если нет, берётся текст первого поста.
+- Описание умно обрезается (по тому же алгоритму, что и `meta description`) и дополняется названием категории.
+- Изображение получается из вложений `attacher` первого поста, либо используется плейсхолдер.
+- Автор определяется по `ft_firstposterid`.
 
-## Лицензия
-BSD License. Автор: webitproff, Copyright (c) 2025. Репозиторий: https://github.com/webitproff/cot-seoforums.
-## Поддержка
+---
+
+## 5. Требования
+
+- **Cotonti CMF** версии 1.0 или новее (протестировано на 0.9.26+)
+- **PHP** 8.4 или выше
+- **MySQL** 8.0+ (или MariaDB с поддержкой InnoDB)
+- Модуль **forums** должен быть установлен и активирован
+- Рекомендуемые плагины:
+  - `attacher` — для извлечения изображений из постов
+  - `urleditor` — для SEO‑дружественных URL
+
+---
+
+## 6. Установка
+
+1. Скопируйте папку `seoforums` в директорию `plugins/` вашего сайта.
+2. Перейдите в **Админ‑панель → Расширения** и установите плагин **SEO Forum**.
+3. Настройте конфигурацию:
+   - `placeholderlogo` — путь к маленькому логотипу для микроразметки (например, `themes/index36/img/logo.webp`)
+   - `placeholderimagedefault` — путь к большой картинке‑плейсхолдеру для тем без изображения
+   - `maxrelatedpostsperpage` — количество похожих тем (0 — отключить блок)
+4. В шаблоне `header.tpl` убедитесь, что присутствуют теги `{HEADER_META_DESCRIPTION}`, `{HEADER_META_KEYWORDS}` и `{PHP.out.meta}`.
+   пример:
+```
+<!--
+	/********************************************************************************
+	* File: header.tpl
+	* Extension: Core'
+	* Description: HTML template for header.tpl.
+	* Compatibility: CMF/CMS Cotonti Siena v0.9.26[](https://github.com/Cotonti/Cotonti)
+	* Dependencies: 
+	* 		 Bootstrap 5.3.+[](https://getbootstrap.com/); 
+	* 		 Font Awesome Free 7.1[](https://fontawesome.com/)
+	* Theme: Index36  
+	* Version: 1.0.2 
+	* Created: 01 Feb 2026 
+	* Updated: 04 July 2026 
+	* Copyright (c) 2026 webitproff | https://github.com/webitproff
+	* Source: https://github.com/webitproff/index36-cotonti-theme
+	* Demo : https://freelance-script.abuyfile.com/ 
+	* Help and support: https://abuyfile.com/ru/forums/cotonti/original/skins/index36
+	* License: BSD (Free distribution with saving Copyright (c) 2026 webitproff)  
+	********************************************************************************/
+-->
+<!-- BEGIN: HEADER -->
+<!DOCTYPE html>
+	<!-- IF {HTML_LANG} -->
+	<html lang="{HTML_LANG}" data-bs-theme="light">
+	<!-- ELSE -->
+	<html lang="{PHP.usr.lang}" data-bs-theme="light">
+	<!-- ENDIF -->
+<!-- main header -->
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<!-- IF {I18N_HEADER_META_TITLE} --> 
+		<title>{I18N_HEADER_META_TITLE}</title>
+		<!-- ELSE -->
+		<title>{HEADER_TITLE} <!-- IF {MARKET_HEADER_XTRA_DEMO_COUNTRY} -->{MARKET_HEADER_XTRA_DEMO_COUNTRY_NAME} <!-- ENDIF --></title>
+		<!-- ENDIF -->
+	<!-- IF {I18N_HEADER_META_DESCRIPTION} --> 
+		<meta name="description" content="{I18N_HEADER_META_DESCRIPTION}" />
+	<!-- ELSE -->
+		<!-- IF {HEADER_META_DESCRIPTION} -->
+		<meta name="description" content="{HEADER_META_DESCRIPTION}" />
+		<!-- ENDIF -->
+	<!-- ENDIF -->
+		<!-- IF {HEADER_BASEHREF} -->
+		{HEADER_BASEHREF}
+		<!-- ENDIF -->
+		<!-- IF {HEADER_CANONICAL_URL} -->
+		<link rel="canonical" href="{HEADER_CANONICAL_URL}" />
+		<!-- ENDIF -->
+		<!-- IF {ALTERNATE_TAGS} -->
+		{ALTERNATE_TAGS}
+		<!-- ENDIF -->
+		<link rel="shortcut icon" href="favicon.ico" />
+		<link rel="icon" href="{PHP.cfg.themes_dir}/{PHP.theme}/img/icon.webp" type="image/svg+xml">
+		<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+		<!-- IF {PHP.out.meta} -->
+		{PHP.out.meta}
+		<!-- ENDIF -->
+		<script>
+			(function () {
+				const storedTheme = localStorage.getItem('theme');
+				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const defaultTheme = storedTheme || (prefersDark ? 'dark' : 'light');
+				document.documentElement.setAttribute('data-bs-theme', defaultTheme);
+			})();
+		</script>
+		{HEADER_HEAD}
+	</head>
+		<body>
+```
+
+5. В шаблоне `forums.posts.tpl` добавьте блок `RELATED_TOPICS` (пример есть в документации) и теги `{TOPIC_READ_TIME}`, `{TOPIC_AUTHOR}` при необходимости.
+   например, после формы для ответов, вставить:
+```
+<!-- IF {PHP|cot_plugin_active('seoforums')} -->
+<!-- BEGIN: RELATED_TOPICS -->
+<div class="container mb-4 mt-5">
+    <h3 class="h4 mt-3">{PHP.L.seoforums_related}</h3>
+    <div class="row g-3">
+        <!-- BEGIN: RELATED_ROW -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <a href="{RELATED_TOPIC_ROW_URL}" class="card border-0 shadow-sm text-decoration-none h-100 overflow-hidden">
+                <!-- Картинка с обрезкой по пропорции 1200:630 -->
+                <div class="related-img-wrapper" style="aspect-ratio: 1200 / 630; width: 100%; overflow: hidden;">
+                    <img src="{RELATED_TOPIC_ROW_IMAGE}" 
+					alt="{RELATED_TOPIC_ROW_TITLE}" 
+					class="related-img"
+					style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+				</div>
+                <!-- Контент карточки -->
+                <div class="card-body">
+                    <h5 class="fs-6 fw-semibold mb-1 text-body">{RELATED_TOPIC_ROW_TITLE}</h5>
+                    <!-- IF {RELATED_TOPIC_ROW_DESC} -->
+                    <p class="text-muted small mb-1">{RELATED_TOPIC_ROW_DESC}</p>
+                    <!-- ENDIF -->
+                    <p class="text-muted small mb-0">{RELATED_TOPIC_ROW_AUTHOR}</p>
+				</div>
+			</a>
+		</div>
+        <!-- END: RELATED_ROW -->
+	</div>
+</div>
+<!-- END: RELATED_TOPICS -->
+<!-- ENDIF -->
+```
+6. Очистите системный кэш.
+
+---
+
+## 7. Рекомендации
+
+- Для корректной вставки изображений из постов установите плагин `attacher`.
+- Настройте стоп‑слова в языковом файле, чтобы улучшить качество извлечения ключевых слов.
+- Если вы используете **[forums_singlepost](https://github.com/webitproff/forums-singlepost-tpl-cotonti)** для раздельных шаблонов одиночных постов, плагин автоматически подстроит канонические URL и мета‑теги.
+- При большом количестве постов убедитесь, что таблицы `cot_forum_topics`, `cot_forum_posts` и `cot_structure` имеют необходимые индексы.
+
+---
+## 8. Поддержка
 **[помощь и обсуждение](https://abuyfile.com/index.php?e=forums&m=posts&q=171&l=ru)**
-## Версия
-2.0.1 (Дата: 2025-10-19).
+
+---
+
+## 9. Лицензия
+
+BSD 3‑Clause License.  
+Автор: [webitproff](https://github.com/webitproff), Copyright © 2025‑2026.
+
+**Репозиторий:** [https://github.com/webitproff/cot-seoforums](https://github.com/webitproff/cot-seoforums)
