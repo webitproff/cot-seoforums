@@ -36,7 +36,7 @@ $L['info_notes'] = 'Требуется модуль forums. Рекомендуе
 // === Default texts for empty meta (fallback) ===
 $L['seoforums_topics_empty_meta_title'] = 'Список тем раздела';
 $L['seoforums_topics_empty_meta_description'] = 'Просмотрите все темы этого раздела форума.';
-$L['seoforums_main_empty_meta_title'] = 'Форумы интернет-магазина FunSmart';
+$L['seoforums_main_empty_meta_title'] = 'Форумы интернет-магазина';
 $L['seoforums_main_empty_meta_description'] = 'Форумы сообщества';
 $L['seoforums_sections_empty_meta_title'] = 'Раздел форума';
 $L['seoforums_sections_empty_meta_description'] = 'Описание раздела отсутствует';
