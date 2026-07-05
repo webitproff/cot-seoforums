@@ -5,6 +5,7 @@
 **Copyright:** © webitproff, 2025‑2026  
 **[Repository](https://github.com/webitproff/cot-seoforums)**  
 **License:** BSD 3‑Clause License
+ ## **[DEMO](https://abuyfile.com/ru/forums/cotonti/original/extrafields/topic206)**
 
 [![Version](https://img.shields.io/badge/version-2.1.1-green.svg)](https://github.com/webitproff/cot-seoforums/releases)
 [![Cotonti Compatibility](https://img.shields.io/badge/Cotonti-v.1+-orange.svg)](https://github.com/Cotonti/Cotonti)
